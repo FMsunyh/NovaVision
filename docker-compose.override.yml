@@ -7,16 +7,16 @@ services:
       - ./backend:/app
       - ./storage:/app/storage
     # 启动带热重载的 uvicorn，代码变更自动重启
-    command: python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-
-    # command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # command: python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   celery:
     volumes:
       - ./backend:/app
       - ./storage:/app/storage
     # 启动 celery worker，监听任务
-    command: celery -A app.tasks.worker worker --loglevel=info
+    # command: celery -A app.celery_app worker --loglevel=info
+    command: Python worker/worker.py
 
   frontend:
     image: node:18-alpine3.19

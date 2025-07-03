@@ -212,6 +212,7 @@ frontend/dist/
 
 # 后端 Python 缓存（更明确）
 backend/app/__pycache__/
+backend/storage
 
 # 本地临时文件
 *.log

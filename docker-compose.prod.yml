@@ -13,8 +13,7 @@ services:
       - redis
     restart: always   # 自动重启容器，生产建议加
     env_file:
-      - .env  # 使用开发环境配置文件，默认也会加载
-
+      - .env.production
 
   celery:
     build:
@@ -24,7 +23,7 @@ services:
       - redis
     restart: always   # 自动重启容器，生产建议加
     env_file:
-      - .env  # 使用开发环境配置文件，默认也会加载
+      - .env.production
 
   redis:
     # 轻量级 Redis 镜像
@@ -33,8 +32,6 @@ services:
     ports:
       - "6379:6379"
     restart: always   # 自动重启容器，生产建议加
-    env_file:
-      - .env  # 使用开发环境配置文件，默认也会加载
 
 
   frontend:
@@ -43,5 +40,4 @@ services:
       - "80:80"  # 生产环境用 nginx，默认 80 端口
     restart: always   # 自动重启容器，生产建议加
     env_file:
-      - .env  # 使用开发环境配置文件，默认也会加载
-
+      - .env.production

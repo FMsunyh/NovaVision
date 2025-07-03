@@ -2,7 +2,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import FileResponse
 import os, uuid, aiofiles
 from celery.result import AsyncResult
-from app.tasks.worker import celery_app
+from app.celery_app import celery_app
 
 router = APIRouter()
 
@@ -16,7 +16,7 @@ async def upload_video(file: UploadFile = File(...), speed: float = Form(1.0),
         content = await file.read()
         await out_file.write(content)
 
-    task = celery_app.send_task("app.tasks.video", args=[{
+    task = celery_app.send_task("app.tasks.video.tasks.process_video", args=[{
         "task_id": task_id,
         "upload_path": upload_path,
         "speed": speed,
