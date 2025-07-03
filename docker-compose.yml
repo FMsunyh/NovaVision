@@ -1,0 +1,39 @@
+version: "3.9"
+
+services:
+  backend:
+    # 后端镜像构建目录
+    build: ./backend
+    # 后端默认端口映射
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - redis
+    restart: always   # 自动重启容器，生产建议加
+
+
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.celery
+    depends_on:
+      - redis
+    restart: always   # 自动重启容器，生产建议加
+
+
+  redis:
+    # 轻量级 Redis 镜像
+    image: redis:7.0-alpine
+    ports:
+      - "6379:6379"
+    restart: always   # 自动重启容器，生产建议加
+
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"  # 生产环境用 nginx，默认 80 端口
+    restart: always   # 自动重启容器，生产建议加
+

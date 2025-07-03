@@ -1,0 +1,21 @@
+{
+  "name": "FastAPI Dev Container",
+  "dockerComposeFile": [
+    "../docker-compose.yml"
+  ],
+  "service": "backend",
+  "workspaceFolder": "/app",
+  "extensions": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.black-formatter",
+    "ms-python.isort",
+    "ms-toolsai.jupyter"
+  ],
+  "settings": {
+    "python.pythonPath": "/usr/local/bin/python"
+  },
+  "forwardPorts": [8000, 5678],
+  "postCreateCommand": "pip install -r requirements.txt",
+  "remoteUser": "root"
+}

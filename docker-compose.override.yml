@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  backend:
+    # 挂载本地代码到容器，方便实时调试代码
+    volumes:
+      - ./backend:/app
+      - ./storage:/app/storage
+    # 启动带热重载的 uvicorn，代码变更自动重启
+    command: python -m debugpy --listen 0.0.0.0:5678 --wait-for-client -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+    # command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  celery:
+    volumes:
+      - ./backend:/app
+      - ./storage:/app/storage
+    # 启动 celery worker，监听任务
+    command: celery -A app.tasks.worker worker --loglevel=info
+
+  frontend:
+    image: node:18-alpine3.19
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "5173:5173"  # Vite 开发服务器端口
+    # 启动前端开发服务器，带热重载
+    command: sh -c "npm install && npm run dev -- --host"

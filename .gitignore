@@ -205,3 +205,18 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# 前端依赖与构建产物
+frontend/node_modules/
+frontend/dist/
+
+# 后端 Python 缓存（更明确）
+backend/app/__pycache__/
+
+# 本地临时文件
+*.log
+*.tmp
+*.temp
+
+# Docker 环境变量
+.env
