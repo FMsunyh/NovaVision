@@ -14,6 +14,8 @@ services:
     restart: always   # 自动重启容器，生产建议加
     env_file:
       - .env.production
+    volumes:
+      - nova_data:/app/storage  # 挂载到容器内 /app/storage
 
   celery:
     build:
@@ -24,6 +26,8 @@ services:
     restart: always   # 自动重启容器，生产建议加
     env_file:
       - .env.production
+    volumes:
+      - nova_data:/app/storage  # 挂载到容器内 /app/storage
 
   redis:
     # 轻量级 Redis 镜像
@@ -41,3 +45,6 @@ services:
     restart: always   # 自动重启容器，生产建议加
     env_file:
       - .env.production
+
+volumes:
+  nova_data:
