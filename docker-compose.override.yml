@@ -17,6 +17,11 @@ services:
     # 启动 celery worker，监听任务
     # command: celery -A app.celery_app worker --loglevel=info
     command: Python worker/worker.py
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
 
   frontend:
     image: node:18-alpine3.19
