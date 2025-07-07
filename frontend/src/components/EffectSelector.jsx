@@ -6,9 +6,7 @@ const effects = [
 
 export default function EffectSelector({ selected, onChange }) {
   const toggle = effect =>
-    onChange(selected.includes(effect)
-      ? selected.filter(e => e !== effect)
-      : [...selected, effect])
+    onChange(selected.includes(effect) ? [] : [effect])
   return (
     <div style={{ marginBottom: 24 }}>
       <h3>选择特效</h3>

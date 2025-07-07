@@ -7,22 +7,26 @@ from app.celery_app import celery_app
 router = APIRouter()
 
 @router.post("/upload")
-async def upload_video(file: UploadFile = File(...), speed: float = Form(1.0),
-                       extract_fps: int = Form(0), watermark: str = Form(None),
-                       clip_start: float = Form(None), clip_end: float = Form(None)):
+async def upload_video(
+    file: UploadFile = File(...),
+    features: str = Form("[]"),
+    effects: str = Form("[]")
+):
+    import json
     task_id = str(uuid.uuid4())
     upload_path = f"storage/uploads/{task_id}.mp4"
     async with aiofiles.open(upload_path, 'wb') as out_file:
         content = await file.read()
         await out_file.write(content)
 
+    features_list = json.loads(features)
+    effects_list = json.loads(effects)
+
     task = celery_app.send_task("app.tasks.video.tasks.process_video", args=[{
         "task_id": task_id,
         "upload_path": upload_path,
-        "speed": speed,
-        "extract_fps": extract_fps,
-        "watermark": watermark,
-        "clip": (clip_start, clip_end)
+        "features": features_list,
+        "effects": effects_list
     }])
     return {"task_id": task.id}
 

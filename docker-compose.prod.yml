@@ -41,7 +41,7 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "80:80"  # 生产环境用 nginx，对外端口改为 7860
+      - "7860:80"  # 生产环境用 nginx，对外端口改为 7860
     restart: always   # 自动重启容器，生产建议加
     env_file:
       - .env.production
