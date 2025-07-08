@@ -2,7 +2,12 @@ import subprocess
 from celery import shared_task
 import os
 import random
+import json
+
 from app.utils.video_utils import get_video_duration, get_video_resolution
+from app.settings import settings
+
+import redis
 
 @shared_task
 def process_video(task: dict):
@@ -39,6 +44,7 @@ def process_video(task: dict):
             )
             cmd += ["-vf", vf]
 
+
     effects = task.get("effects")
     if effects:
         print("Processing effects:", effects)
@@ -49,7 +55,7 @@ def process_video(task: dict):
                 sweep_dir = "storage/effects/light/h"
             else:
                 sweep_dir = "storage/effects/light/v"
-            sweep_files = [f for f in os.listdir(sweep_dir) if f.endswith(('.mp4', '.mov', '.avi'))]
+            sweep_files = [f for f in os.listdir(sweep_dir) if f.endswith((".mp4", ".mov", ".avi"))]
             if not sweep_files:
                 raise RuntimeError(f"No sweep light video found in {sweep_dir}")
             sweep_video = os.path.join(sweep_dir, random.choice(sweep_files))
@@ -72,8 +78,30 @@ def process_video(task: dict):
                 output_path
             ]
             subprocess.run(cmd, check=True)
+            _notify_task_done(task, output_path)
             return output_path
 
     cmd += [output_path]
     subprocess.run(cmd, check=True)
+    _notify_task_done(task, output_path)
     return output_path
+
+
+def _notify_task_done(task, output_path):
+    try:
+        redis_kwargs = {
+            'host': settings.redis_host,
+            'port': settings.redis_port,
+            'db': 0
+        }
+        if settings.redis_password:
+            redis_kwargs['password'] = settings.redis_password
+        r = redis.Redis(**redis_kwargs)
+        notify_data = {
+            "task_id": task.get("task_id"),
+            "status": "SUCCESS",
+            "result": {"output_path": output_path}
+        }
+        r.publish('nova:task_done', json.dumps(notify_data))
+    except Exception as e:
+        print(f"[Notify] Redis publish failed: {e}")
