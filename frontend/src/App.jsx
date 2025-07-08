@@ -96,7 +96,7 @@ function App() {
               {selectedEffects.length > 0 && (
                 <div style={{ fontWeight: 600, fontSize: 16 }}>特效：
                   <span style={{ color: '#333', fontWeight: 400, fontSize: 15 }}>
-                    {selectedEffects.map(e => `【${e}】`).join('、')}
+                    {selectedEffects.map(e => `【${getEffectLabel(e)}】`).join('、')}
                   </span>
                 </div>
               )}
@@ -134,6 +134,23 @@ const featureLabels = {
 }
 function getFeatureLabel(key) {
   return featureLabels[key] || key
+}
+
+// 新增：特效key转中文label方法
+const effectLabels = {
+  light: '扫光',
+  fadein: '泛光开幕',
+  dropin: '下降开幕',
+  bookmode: '书单模式',
+  blendmode: '溶图模式',
+  triple: '横版三屏',
+  goods: '好物',
+  movie: '影视',
+  drama: '短剧',
+  shop: '探店',
+};
+function getEffectLabel(key) {
+  return effectLabels[key] || key;
 }
 
 export default App
