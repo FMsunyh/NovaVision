@@ -1,11 +1,7 @@
 import subprocess
 from celery import shared_task
-
-def get_video_duration(input_path):
-    # 获取视频总时长（秒）
-    cmd = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration',
-           '-of', 'default=noprint_wrappers=1:nokey=1', input_path]
-    return float(subprocess.check_output(cmd).decode().strip())
+import random
+from app.utils.video_utils import get_video_duration, get_video_resolution
 
 @shared_task
 def process_video(task: dict):
@@ -25,6 +21,19 @@ def process_video(task: dict):
             start = 3
             end = max(duration - 3, start + 0.1)
             cmd += ["-ss", str(start), "-to", str(end)]
+            
+        if "randomrotation" in features:
+            angle = random.choice([2, -2])
+            zoom_ratio = 1.1
+            
+            width, height = get_video_resolution(input_path)
+            radians = angle * 3.14159265 / 180
+            vf = (
+                f"rotate={radians}:ow=rotw({radians}):oh=roth({radians}):c=black," \
+                f"scale=iw*{zoom_ratio}:ih*{zoom_ratio}," \
+                f"crop={width}:{height}:(in_w-{width})/2:(in_h-{height})/2"
+            )
+            cmd += ["-vf", vf]
 
     effects = task.get("effects")
     if effects:

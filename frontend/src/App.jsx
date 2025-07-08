@@ -130,6 +130,7 @@ const featureLabels = {
   breakoffbothends: '掐头去尾',
   speedup: '随机加速',
   randommirror: '随机镜像',
+  randomrotation: '随机旋转',
 }
 function getFeatureLabel(key) {
   return featureLabels[key] || key

@@ -1,15 +1,16 @@
 import React from 'react'
 
 const features = [
-  { key: 'dedup', label: '基础去重' },
-  { key: 'mirrorflip', label: '镜像翻转' },
-  { key: 'md5', label: '修改MD5' },
-  { key: 'smart_capture', label: '智能抽帧' },
-  { key: 'color', label: '智能调色' },
-  { key: 'sharpen', label: '画面锐化' },
-  { key: 'breakoffbothends', label: '掐头去尾' },
-  { key: 'speedup', label: '随机加速' },
-  { key: 'randommirror', label: '随机镜像' },
+  { key: 'dedup', label: '基础去重', enabled: true },
+  { key: 'mirrorflip', label: '镜像翻转', enabled: true },
+  { key: 'md5', label: '修改MD5', enabled: true },
+  { key: 'smart_capture', label: '智能抽帧', enabled: false },
+  { key: 'color', label: '智能调色', enabled: false },
+  { key: 'sharpen', label: '画面锐化', enabled: false },
+  { key: 'breakoffbothends', label: '掐头去尾', enabled: true },
+  { key: 'speedup', label: '随机加速', enabled: false },
+  { key: 'randommirror', label: '随机镜像', enabled: false },
+  { key: 'randomrotation', label: '随机旋转', enabled: true },
 ]
 
 export default function FeatureSelector({ selected, onChange }) {
@@ -30,14 +31,16 @@ export default function FeatureSelector({ selected, onChange }) {
               border: selected.includes(f.key) ? '2px solid #4f7cff' : '1px solid #e0e0e0',
               borderRadius: 6,
               background: selected.includes(f.key) ? '#4f7cff' : '#fff',
-              color: selected.includes(f.key) ? '#fff' : '#333',
+              color: !f.enabled ? '#bbb' : selected.includes(f.key) ? '#fff' : '#333',
               fontWeight: 500,
-              cursor: 'pointer',
+              cursor: f.enabled ? 'pointer' : 'not-allowed',
               marginRight: 8,
-              marginBottom: 8
+              marginBottom: 8,
+              opacity: f.enabled ? 1 : 0.5
             }}
-            onClick={() => toggle(f.key)}
+            onClick={() => f.enabled && toggle(f.key)}
             type="button"
+            disabled={!f.enabled}
           >
             {f.label}
           </button>
