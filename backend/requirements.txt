@@ -4,4 +4,4 @@ celery[redis]
 aiofiles
 python-multipart
 pydantic-settings
-
+alibabacloud-oss-v2
