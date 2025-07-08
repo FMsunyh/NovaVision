@@ -53,7 +53,7 @@ def process_video(task: dict):
             if not sweep_files:
                 raise RuntimeError(f"No sweep light video found in {sweep_dir}")
             sweep_video = os.path.join(sweep_dir, random.choice(sweep_files))
-            sweep_opacity = 0.03
+            sweep_opacity = 0.02
             filter_complex = (
                 f"[1:v]format=rgba,scale={width}:{height},"
                 f"colorchannelmixer=aa={sweep_opacity}[light];"
