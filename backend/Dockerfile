@@ -1,12 +1,15 @@
+# syntax=docker/dockerfile:1
 FROM python:3.11-slim
 
 WORKDIR /app
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# 安装 debugpy 用于远程调试
-RUN pip install debugpy
+# 使用 --mount=type=cache 挂载 pip 缓存目录
+# 这会将缓存保留在宿主机上，以加速后续构建
+# 同时合并两个 pip install 命令以优化层
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r requirements.txt
 
 COPY . .
 
