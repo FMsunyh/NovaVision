@@ -32,6 +32,7 @@ function App() {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
+    console.log('WebSocket 连接地址:', `${protocol}://${apiHost}/api/ws/notify`)
     const ws = new WebSocket(`${protocol}://${apiHost}/api/ws/notify`)
     
     ws.onopen = () => {
