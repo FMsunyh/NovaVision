@@ -1,14 +1,15 @@
 FROM python:3.11-slim
-
 WORKDIR /app
 
-RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+RUN if [ -f /etc/apt/sources.list ]; then \
+		sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list; \
+	fi && \
 	apt-get update && \
 	apt-get install -y --no-install-recommends ffmpeg && \
 	rm -rf /var/lib/apt/lists/* 
 
 COPY requirements.txt .
-RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
