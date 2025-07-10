@@ -29,11 +29,11 @@ services:
     volumes:
       - nova_data:/app/storage  # 挂载到容器内 /app/storage
       - ./backend/storage/effects:/app/storage/effects
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - capabilities: [gpu]
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - capabilities: [gpu]
 
   redis:
     # 轻量级 Redis 镜像
