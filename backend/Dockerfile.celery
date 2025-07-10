@@ -1,23 +1,14 @@
-FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
+FROM python:3.11-slim-bullseye
 
 WORKDIR /app
 
-# 安装依赖和 ffmpeg（带 GPU 支持）
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        python3-pip \
-        python3-setuptools \
-        python3-dev \
-        ffmpeg \
-        wget \
-        git && \
-    rm -rf /var/lib/apt/lists/*
-
-# 可选：如需自定义编译 ffmpeg 以支持更多 GPU 编码器，可参考 https://github.com/NVIDIA/ffmpeg
-
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && \
+	apt-get install -y --no-install-recommends ffmpeg && \
+	rm -rf /var/lib/apt/lists/* && \
+	pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
 CMD ["celery", "-A", "app.celery_app", "worker", "--loglevel=info"]
+# CMD ["python", "worker/worker.py"]
