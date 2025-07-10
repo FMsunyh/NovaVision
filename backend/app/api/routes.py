@@ -18,6 +18,7 @@ async def upload_video(
     effects: str = Form("[]")
 ):
     task_id = str(uuid.uuid4())
+    os.makedirs("storage/uploads", exist_ok=True)
     upload_path = f"storage/uploads/{task_id}.mp4"
     async with aiofiles.open(upload_path, 'wb') as out_file:
         content = await file.read()

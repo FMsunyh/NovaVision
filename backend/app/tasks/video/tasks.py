@@ -17,6 +17,7 @@ def process_video(task: dict):
     主函数：根据任务内容处理视频，支持功能（features）和特效（effects）。
     """
     input_path = task["upload_path"]
+    os.makedirs("storage/outputs", exist_ok=True)
     output_path = f"storage/outputs/{task['task_id']}.mp4"
 
     # Step 1: 处理功能（features），生成中间文件
