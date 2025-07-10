@@ -5,11 +5,7 @@ WORKDIR /app
 
 COPY requirements.txt .
 
-# 使用 --mount=type=cache 挂载 pip 缓存目录
-# 这会将缓存保留在宿主机上，以加速后续构建
-# 同时合并两个 pip install 命令以优化层
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip pip install -i https://mirrors.aliyun.com/pypi/simple --no-cache-dir -r requirements.txt
 
 COPY . .
 
