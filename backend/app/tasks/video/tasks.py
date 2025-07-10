@@ -84,7 +84,7 @@ def process_effects(task: dict, input_path: str, output_path: str):
     """
     effects = task.get("effects", [])
     if not effects:
-        light_effect_command(input_path, output_path)
+        light_effect_command(input_path, output_path, 0.01)
 
     if "light" in effects:
         light_effect_command(input_path, output_path)
@@ -105,7 +105,7 @@ def random_rotation_filter(input_path: str) -> list:
     ]
 
 
-def light_effect_command(input_path: str, output_path: str):
+def light_effect_command(input_path: str, output_path: str, sweep_opacity:float = 0.6):
     """
     构建并执行扫光特效命令。
     """
@@ -119,7 +119,7 @@ def light_effect_command(input_path: str, output_path: str):
     if not sweep_files:
         raise RuntimeError(f"No sweep light video found in {sweep_dir}")
     sweep_video = random.choice(sweep_files)
-    sweep_opacity = 0.6
+    sweep_opacity = sweep_opacity
     filter_complex = (
         f"[1:v]format=rgba,scale={width}:{height},"
         f"colorchannelmixer=aa={sweep_opacity}[light];"
