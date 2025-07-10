@@ -42,7 +42,8 @@ services:
     ports:
       - "6379:6379"
     restart: always   # 自动重启容器，生产建议加
-
+    env_file:
+      - .env.production
 
   frontend:
     build: ./frontend
