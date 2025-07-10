@@ -13,7 +13,14 @@ function App() {
   const [result, setResult] = useState(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
-  
+
+    // 动态确定API主机地址
+  const apiHost = import.meta.env.VITE_API_URL ? window.location.host : ''
+
+  console.log("VITE_API_URL",import.meta.env.VITE_API_URL)
+  console.log("apiHost",apiHost)
+
+      
   // WebSocket 相关
   const wsRef = useRef(null)
   const reconnectTimeoutRef = useRef(null)
@@ -25,8 +32,7 @@ function App() {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const host = window.location.host
-    const ws = new WebSocket(`${protocol}://${host}/api/ws/notify`)
+    const ws = new WebSocket(`${protocol}://${apiHost}/api/ws/notify`)
     
     ws.onopen = () => {
       console.log('WebSocket 已连接')
@@ -41,8 +47,17 @@ function App() {
         // 只处理当前任务的完成消息
         if (data.task_id === taskId && data.status === 'SUCCESS') {
           setStatus('SUCCESS')
-          setResult(`/api/result/${taskId}`)
-          console.log('任务完成，结果已更新')
+          
+          // 优先使用OSS预签名URL，如果没有则使用本地API
+          if (data.result && data.result.oss && data.result.oss.presigned_url) {
+            setResult(data.result.oss.presigned_url)
+            console.log('任务完成，使用OSS地址:', data.result.oss.presigned_url)
+          } else {
+            setResult(`/api/result/${taskId}`)
+            console.log('任务完成，使用本地地址')
+          }
+          
+          ws.close() // 任务完成后关闭连接
         }
       } catch (e) {
         console.warn('WebSocket 消息解析失败:', e)

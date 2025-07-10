@@ -28,6 +28,7 @@ services:
       - .env.production
     volumes:
       - nova_data:/app/storage  # 挂载到容器内 /app/storage
+      - ./backend/storage/effects:/app/storage/effects
     deploy:
       resources:
         reservations:

@@ -26,7 +26,7 @@ async def upload_video(
     features_list = json.loads(features)
     effects_list = json.loads(effects)
 
-    task = celery_app.send_task("app.tasks.video.tasks.process_video", args=[{
+    task = celery_app.send_task(name="app.tasks.video.tasks.process_video", task_id=task_id, args=[{
         "task_id": task_id,
         "upload_path": upload_path,
         "features": features_list,
