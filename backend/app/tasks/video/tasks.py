@@ -42,12 +42,15 @@ def process_features(task: dict, input_path: str) -> str:
     """
     features = task.get("features", [])
     if not features:
-        return input_path  # 如果没有功能需要处理，直接返回原始输入路径
+        features.append("dedup")  # 如果功能列表为空，添加 'dedup'
 
     # 构建中间文件路径
     temp_path = f"storage/outputs/{task['task_id']}_temp.mp4"
     vf_filters = []
     cmd = ["ffmpeg", "-i", input_path]
+
+    if "dedup" in features:
+        vf_filters.append("eq=brightness=0.1")
 
     # 功能处理逻辑
     if "mirrorflip" in features:
@@ -81,7 +84,7 @@ def process_effects(task: dict, input_path: str, output_path: str):
     """
     effects = task.get("effects", [])
     if not effects:
-        return
+        light_effect_command(input_path, output_path)
 
     if "light" in effects:
         light_effect_command(input_path, output_path)
