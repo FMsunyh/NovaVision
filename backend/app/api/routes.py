@@ -11,7 +11,7 @@ import redis.asyncio as redis
 router = APIRouter()
 
 
-@router.post("/upload")
+@router.post("/api/upload")
 async def upload_video(
     file: UploadFile = File(...),
     features: str = Form("[]"),
@@ -37,7 +37,7 @@ async def upload_video(
 
 
 # WebSocket 路由：用于前端监听任务完成推送
-@router.websocket("/ws/notify")
+@router.websocket("/socket/notify")
 async def websocket_notify(websocket: WebSocket):
     await websocket.accept()
     redis_kwargs = {
@@ -62,13 +62,13 @@ async def websocket_notify(websocket: WebSocket):
         await redis_client.close()
 
 
-@router.get("/status/{task_id}")
+@router.get("/api/status/{task_id}")
 def get_status(task_id: str):
     res = AsyncResult(task_id, app=celery_app)
     return {"status": res.status, "result": res.result if res.ready() else None}
 
 
-@router.get("/result/{task_id}")
+@router.get("/api/result/{task_id}")
 def get_result(task_id: str):
     path = f"storage/outputs/{task_id}.mp4"
     if not os.path.exists(path):

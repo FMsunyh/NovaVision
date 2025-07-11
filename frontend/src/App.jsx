@@ -14,16 +14,26 @@ function App() {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
 
-    // 动态确定API主机地址
-  const apiHost = import.meta.env.VITE_API_URL ? window.location.host : ''
-
-  console.log("VITE_API_URL",import.meta.env.VITE_API_URL)
-  console.log("apiHost",apiHost)
-
-      
   // WebSocket 相关
   const wsRef = useRef(null)
   const reconnectTimeoutRef = useRef(null)
+
+    // // 自动生成 WebSocket 地址
+    // const getWebSocketUrl = () => {
+    //   if (import.meta.env.DEV) {
+    //   // 开发环境，连接本地 Vite 代理端口（例如 5173）
+    //   return ''
+
+    //   } else {
+    //   // 生产环境，使用当前页面的协议和域名，自动切换 ws/wss
+    //   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    //   const host = window.location.host
+
+    //   console.log('WebSocket 连接地址=======================:', `${protocol}://${host}/`)
+
+    //   return `${protocol}//${host}/`
+    //   }
+    // }
 
   // WebSocket 连接管理
   const connectWebSocket = () => {
@@ -31,9 +41,8 @@ function App() {
       return // 已经连接
     }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    console.log('WebSocket 连接地址:', `${protocol}://${apiHost}/api/ws/notify`)
-    const ws = new WebSocket(`${protocol}://${apiHost}/api/ws/notify`)
+    // const ws = new WebSocket(getWebSocketUrl()+'/socket/notify')
+    const ws = new WebSocket('/socket/notify')
     
     ws.onopen = () => {
       console.log('WebSocket 已连接')
