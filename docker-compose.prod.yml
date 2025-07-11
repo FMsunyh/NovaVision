@@ -20,7 +20,7 @@ services:
   celery:
     build:
       context: ./backend
-      dockerfile: Dockerfile.celery
+      dockerfile: Dockerfile_GPU.celery
     depends_on:
       - redis
     restart: always   # 自动重启容器，生产建议加
@@ -29,13 +29,17 @@ services:
     volumes:
       - nova_data:/app/storage  # 挂载到容器内 /app/storage
       - ./backend/storage/effects:/app/storage/effects
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           device_ids: [ '0' ]
-    #           capabilities: [ compute, utility ]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: [ '0' ]
+              capabilities: [ compute, utility ]
+
+    # environment:
+    #   - NVIDIA_VISIBLE_DEVICES=0
+    #   - NVIDIA_DRIVER_CAPABILITIES=compute,utility
 
   redis:
     # 轻量级 Redis 镜像

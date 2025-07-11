@@ -1,9 +1,13 @@
 FROM nvidia/cuda:12.2.0-runtime-ubuntu22.04
 
+# 设置非交互式安装
+ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-# 1. 安装系统依赖
-# 这部分不经常变动，会被缓存
+RUN sed -i 's|http://archive.ubuntu.com/ubuntu/|https://mirrors.aliyun.com/ubuntu/|g' /etc/apt/sources.list
+
 RUN apt-get update && \
 	apt-get install -y --no-install-recommends \
 		python3-pip \
@@ -14,15 +18,9 @@ RUN apt-get update && \
 		git && \
 	rm -rf /var/lib/apt/lists/*
 
-# 2. 复制并安装 Python 依赖
-# 只有当 requirements.txt 文件变化时，这一层和之后的层才会重新构建
 COPY requirements.txt .
-# 使用 --mount=type=cache 来缓存 pip 包，提高后续构建速度
-# 这需要在启用 BuildKit 的情况下构建 (docker build --...)
-RUN --mount=type=cache,target=/root/.cache/pip pip install -r requirements.txt
 
-# 3. 复制应用程序代码
-# 这是最常变动的部分，放在最后。这样代码的改动不会导致前面的依赖安装步骤重新运行
+RUN --mount=type=cache,target=/root/.cache/pip pip install -i https://mirrors.aliyun.com/pypi/simple --no-cache-dir -r requirements.txt
+
 COPY . .
-
 CMD ["celery", "-A", "app.celery_app", "worker", "--loglevel=info"]

@@ -47,7 +47,7 @@ def process_features(task: dict, input_path: str) -> str:
     # 构建中间文件路径
     temp_path = f"storage/outputs/{task['task_id']}_temp.mp4"
     vf_filters = []
-    cmd = ["ffmpeg", "-i", input_path]
+    cmd = ["ffmpeg", "-hwaccel", "cuda", "-i", input_path]
 
     if "dedup" in features:
         vf_filters.append("eq=brightness=0.1")
@@ -71,7 +71,7 @@ def process_features(task: dict, input_path: str) -> str:
     # 添加滤镜和编码参数
     if vf_filters:
         cmd += ["-vf", ",".join(vf_filters)]
-    cmd += ["-c:v", "libx264", "-c:a", "aac", "-strict", "experimental", "-y", temp_path]
+    cmd += ["-c:v", "h264_nvenc", "-pix_fmt", "yuv420p", "-c:a", "aac", "-y", temp_path]
 
     # 执行功能处理命令
     execute_command(cmd)
@@ -105,7 +105,7 @@ def random_rotation_filter(input_path: str) -> list:
     ]
 
 
-def light_effect_command(input_path: str, output_path: str, sweep_opacity:float = 0.6):
+def light_effect_command(input_path: str, output_path: str, sweep_opacity: float = 0.6):
     """
     构建并执行扫光特效命令。
     """
@@ -119,7 +119,6 @@ def light_effect_command(input_path: str, output_path: str, sweep_opacity:float 
     if not sweep_files:
         raise RuntimeError(f"No sweep light video found in {sweep_dir}")
     sweep_video = random.choice(sweep_files)
-    sweep_opacity = sweep_opacity
     filter_complex = (
         f"[1:v]format=rgba,scale={width}:{height},"
         f"colorchannelmixer=aa={sweep_opacity}[light];"
@@ -127,11 +126,13 @@ def light_effect_command(input_path: str, output_path: str, sweep_opacity:float 
     )
     cmd = [
         "ffmpeg",
+        "-hwaccel", "cuda",
         "-i", input_path,
         "-stream_loop", "-1", "-i", sweep_video,
         "-filter_complex", filter_complex,
         "-map", "0:a?",
-        "-c:v", "libx264",
+        "-c:v", "h264_nvenc",
+        "-pix_fmt", "yuv420p",
         "-c:a", "copy",
         "-shortest",
         "-y",
