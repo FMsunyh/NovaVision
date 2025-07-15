@@ -16,6 +16,7 @@ def process_video(task: dict):
     """
     主函数：根据任务内容处理视频，支持功能（features）和特效（effects）。
     """
+    print("开始处理视频")
     input_path = task["upload_path"]
     os.makedirs("storage/outputs", exist_ok=True)
     output_path = f"storage/outputs/{task['task_id']}.mp4"
@@ -87,7 +88,7 @@ def process_effects(task: dict, input_path: str, output_path: str):
         light_effect_command(input_path, output_path, 0.01)
 
     if "light" in effects:
-        light_effect_command(input_path, output_path)
+        light_effect_command(input_path, output_path, 0.02)
 
 
 def random_rotation_filter(input_path: str) -> list:

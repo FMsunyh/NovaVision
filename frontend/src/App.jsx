@@ -1,179 +1,270 @@
-import React, { useState, useEffect, useRef } from 'react'
-import FeatureSelector from './components/FeatureSelector'
-import EffectSelector from './components/EffectSelector'
-import UploadPanel from './components/UploadPanel'
-import ResultPanel from './components/ResultPanel'
+import React, { useState, useEffect, useRef } from 'react';
+import FeatureSelector from './components/FeatureSelector';
+import EffectSelector from './components/EffectSelector';
+import UploadUrlPanel from './components/UploadUrlPanel';
+import ResultPanel from './components/ResultPanel';
+import axios from 'axios';
 
 function App() {
-  const [selectedFeatures, setSelectedFeatures] = useState([])
-  const [selectedEffects, setSelectedEffects] = useState([])
-  const [file, setFile] = useState(null)
-  const [taskId, setTaskId] = useState(null)
-  const [status, setStatus] = useState(null)
-  const [result, setResult] = useState(null)
-  const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState(null)
+  const [selectedFeatures, setSelectedFeatures] = useState([]);
+  const [selectedEffects, setSelectedEffects] = useState([]);
+  const [taskId, setTaskId] = useState(null);
+  const [status, setStatus] = useState(null);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [resultLoading, setResultLoading] = useState(false);
+  const [shouldStartUpload, setShouldStartUpload] = useState(false);
+  
+  // 新增：保存当前处理中的任务ID和预签名URL
+  const currentTaskIdRef = useRef(null);
+  const currentPresignedUrlRef = useRef('');
+  const fileToUploadRef = useRef(null);
+
+  const [presignedUrl, setPresignedUrl] = useState('');
 
   // WebSocket 相关
-  const wsRef = useRef(null)
-  const reconnectTimeoutRef = useRef(null)
-
-    // // 自动生成 WebSocket 地址
-    // const getWebSocketUrl = () => {
-    //   if (import.meta.env.DEV) {
-    //   // 开发环境，连接本地 Vite 代理端口（例如 5173）
-    //   return ''
-
-    //   } else {
-    //   // 生产环境，使用当前页面的协议和域名，自动切换 ws/wss
-    //   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    //   const host = window.location.host
-
-    //   console.log('WebSocket 连接地址=======================:', `${protocol}://${host}/`)
-
-    //   return `${protocol}//${host}/`
-    //   }
-    // }
+  const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
 
   // WebSocket 连接管理
   const connectWebSocket = () => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return // 已经连接
+      return;
     }
 
-    // const ws = new WebSocket(getWebSocketUrl()+'/socket/notify')
-    const ws = new WebSocket('/socket/notify')
+    const ws = new WebSocket('/socket/notify');
     
     ws.onopen = () => {
-      console.log('WebSocket 已连接')
-      setError(null)
-    }
+      console.log('WebSocket 已连接');
+      setError(null);
+    };
     
     ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data)
-        console.log('收到 WebSocket 消息:', data)
+        const data = JSON.parse(event.data);
+        console.log('收到 WebSocket 消息:', data);
         
-        // 只处理当前任务的完成消息
-        if (data.task_id === taskId && data.status === 'SUCCESS') {
-          setStatus('SUCCESS')
+        if (data.task_id === currentTaskIdRef.current && data.status === 'SUCCESS') {
+          setStatus('SUCCESS');
           
-          // 优先使用OSS预签名URL，如果没有则使用本地API
           if (data.result && data.result.oss && data.result.oss.presigned_url) {
-            setResult(data.result.oss.presigned_url)
-            console.log('任务完成，使用OSS地址:', data.result.oss.presigned_url)
+            setResult(data.result.oss.presigned_url);
           } else {
-            setResult(`/api/result/${taskId}`)
-            console.log('任务完成，使用本地地址')
+            setResult(`/api/result/${data.task_id}`);
           }
           
-          ws.close() // 任务完成后关闭连接
+          ws.close();
         }
       } catch (e) {
-        console.warn('WebSocket 消息解析失败:', e)
+        console.warn('WebSocket 消息解析失败:', e);
       }
-    }
+    };
     
     ws.onerror = (e) => {
-      console.error('WebSocket 错误:', e)
-      setError('连接错误，请检查网络')
-    }
+      console.error('WebSocket 错误:', e);
+      setError('连接错误，请检查网络');
+    };
     
     ws.onclose = (e) => {
-      console.log('WebSocket 连接关闭:', e.code, e.reason)
-      wsRef.current = null
+      console.log('WebSocket 连接关闭:', e.code, e.reason);
+      wsRef.current = null;
       
-      // 非正常关闭且有任务时，尝试重连
-      if (taskId && e.code !== 1000 && e.code !== 1001) {
+      if (currentTaskIdRef.current && e.code !== 1000 && e.code !== 1001) {
         reconnectTimeoutRef.current = setTimeout(() => {
-          console.log('尝试重新连接 WebSocket...')
-          connectWebSocket()
-        }, 3000)
+          console.log('尝试重新连接 WebSocket...');
+          connectWebSocket();
+        }, 3000);
       }
-    }
+    };
     
-    wsRef.current = ws
-  }
+    wsRef.current = ws;
+  };
 
-  // 清理 WebSocket 连接
   const cleanupWebSocket = () => {
     if (wsRef.current) {
-      wsRef.current.close(1000, 'cleanup')
-      wsRef.current = null
+      wsRef.current.close(1000, 'cleanup');
+      wsRef.current = null;
     }
     if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current)
-      reconnectTimeoutRef.current = null
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
-  }
+  };
 
-  // 当有任务 ID 时建立 WebSocket 连接
   useEffect(() => {
     if (taskId && status !== 'SUCCESS') {
-      connectWebSocket()
+      currentTaskIdRef.current = taskId;
+      connectWebSocket();
     } else {
-      cleanupWebSocket()
+      cleanupWebSocket();
     }
     
-    return cleanupWebSocket // 组件卸载时清理
-  }, [taskId, status])
+    return cleanupWebSocket;
+  }, [taskId, status]);
 
-  // 上传处理
-  const handleUpload = async () => {
-    if (!file) return
+  // API 方法
+  const generatePresignedUrl = async () => {
+    setStatus('UPLOADING');
+    setUploading(true);
+    setError(null);
+    try {
+      console.log('请求预签名URL...');
+      const response = await fetch('/api/presign_url');
+      if (!response.ok) {
+        throw new Error('生成上传链接失败');
+      }
+      
+      const data = await response.json();
+      console.log('预签名URL生成成功:', data);
+      setPresignedUrl(data.presigned_url);
+      setTaskId(data.task_id);
+      currentPresignedUrlRef.current = data.presigned_url; // 保存到引用
+      return data;
+    } catch (err) {
+      console.error('预签名URL生成失败:', err);
+      setError(err.message);
+      setStatus('FAILURE');
+      throw err;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const uploadFileToUrl = async (file) => {
+    // 从引用中获取预签名URL而不是状态
+    const url = currentPresignedUrlRef.current;
+    console.log('使用预签名URL上传文件:', url);
     
-    setUploading(true)
-    setError(null)
-    setResult(null)
+    if (!url || !file) {
+      console.error('缺少预签名URL或文件');
+      setError('缺少必要的上传信息');
+      setStatus('FAILURE');
+      return;
+    }
     
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('features', JSON.stringify(selectedFeatures))
-    formData.append('effects', JSON.stringify(selectedEffects))
+    setStatus('UPLOADING');
+    setUploading(true);
+    setError(null);
     
     try {
-      const response = await fetch('/api/upload', {
+      console.log('开始上传文件:', file.name, '大小:', file.size, '类型:', file.type);
+      
+      // 创建可取消的请求
+      const source = axios.CancelToken.source();
+      const cancelTimeout = setTimeout(() => {
+        source.cancel('上传超时 (300秒)');
+      }, 300000);
+      
+      // 上传进度处理
+      const onUploadProgress = (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        console.log(`上传进度: ${percentCompleted}%`);
+        // 可以在这里添加上传进度状态
+      };
+      
+      const response = await axios.put(url, file, {
+        headers: {
+          'Content-Type': file.type || 'video/mp4'
+        },
+        cancelToken: source.token,
+        onUploadProgress
+      });
+
+      clearTimeout(cancelTimeout);
+
+      if (response.status !== 200) {
+        throw new Error(`上传失败: ${response.statusText}`);
+      }
+      console.log('文件上传成功:', response.status);
+    } catch (err) {
+      if (axios.isCancel(err)) {
+        console.error('上传被取消:', err.message);
+        setError('上传超时，请重试');
+      } else {
+        console.error('文件上传失败:', err);
+        setError(err.message);
+      }
+      setStatus('FAILURE');
+      throw err;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const notifyUploadComplete = async () => {
+    // 从引用中获取任务ID和预签名URL
+    const taskId = currentTaskIdRef.current;
+    const url = currentPresignedUrlRef.current;
+    
+    if (!taskId || !url) return;
+    
+    setStatus('PENDING');
+    setError(null);
+    const formData = new FormData();
+    formData.append('task_id', taskId);
+    formData.append('presigned_url', url);
+    formData.append('features', JSON.stringify(selectedFeatures));
+    formData.append('effects', JSON.stringify(selectedEffects));
+
+    for (const [key, value] of formData.entries()) {
+      console.log(key, value);
+    }
+    
+    try {
+      console.log('通知后端上传完成完成...');
+      const response = await fetch('/api/upload_complete', {
         method: 'POST',
         body: formData
-      })
+      });
       
       if (!response.ok) {
-        throw new Error(`上传失败: ${response.status}`)
+        throw new Error(`上传完成通知失败: ${response.status}`);
       }
       
-      const data = await response.json()
-      setTaskId(data.task_id)
-      setStatus('PENDING')
-      console.log('上传成功，任务 ID:', data.task_id)
-      
+      console.log('上传完成');
+      return await response.json();
     } catch (err) {
-      setError(err.message)
-      console.error('上传错误:', err)
-    } finally {
-      setUploading(false)
+      console.error('失败:', err);
+      setError(err.message);
+      setStatus('FAILURE');
+      throw err;
     }
-  }
+  };
 
-  // 手动查询状态（保留作为备用）
-  const checkStatus = async () => {
-    if (!taskId) return
-    
-    try {
-      const response = await fetch(`/api/status/${taskId}`)
-      const data = await response.json()
-      setStatus(data.status)
+  const handleUrlUpload = (file) => {
+    console.log('开始处理上传请求:', file.name);
+    fileToUploadRef.current = file;
+    setStatus(null);
+    setResult(null);
+    setShouldStartUpload(true);
+  };
+
+  useEffect(() => {
+    if (shouldStartUpload && fileToUploadRef.current) {
+      const uploadFile = async () => {
+        try {
+          console.log('开始执行上传流程');
+          await generatePresignedUrl();
+          await uploadFileToUrl(fileToUploadRef.current);
+          await notifyUploadComplete();
+        } catch (error) {
+          console.error('上传流程错误:', error);
+        } finally {
+          setShouldStartUpload(false);
+        }
+      };
       
-      if (data.status === 'SUCCESS') {
-        setResult(`/api/result/${taskId}`)
-      } else if (data.status === 'FAILURE') {
-        setError('任务处理失败')
-      }
-    } catch (err) {
-      setError('查询状态失败')
+      uploadFile();
     }
-  }
+  }, [shouldStartUpload]);
 
-  // 辅助函数：获取功能中文名
+  const refreshResult = () => {
+    if (taskId && status === 'SUCCESS') {
+      fetchResult();
+    }
+  };
+
   const getFeatureLabel = (key) => {
     const featureLabels = {
       dedup: '基础去重',
@@ -186,11 +277,10 @@ function App() {
       speedup: '随机加速',
       randommirror: '随机镜像',
       randomrotation: '随机旋转',
-    }
-    return featureLabels[key] || key
-  }
+    };
+    return featureLabels[key] || key;
+  };
 
-  // 辅助函数：获取特效中文名
   const getEffectLabel = (key) => {
     const effectLabels = {
       light: '扫光',
@@ -203,9 +293,9 @@ function App() {
       movie: '影视',
       drama: '短剧',
       shop: '探店',
-    }
-    return effectLabels[key] || key
-  }
+    };
+    return effectLabels[key] || key;
+  };
 
   return (
     <div style={{
@@ -236,7 +326,6 @@ function App() {
         </div>
         
         <div style={{ flex: 1, minWidth: 320 }}>
-          {/* 已选择的处理方式和特效展示 */}
           {(selectedFeatures.length > 0 || selectedEffects.length > 0) && (
             <div style={{ background: '#fafbfc', borderRadius: 12, padding: 20, marginBottom: 24, border: '1px solid #ececec' }}>
               <div style={{ color: '#7c3aed', fontWeight: 600, marginBottom: 8, fontSize: 16 }}>
@@ -259,21 +348,31 @@ function App() {
             </div>
           )}
           
-          <UploadPanel
-            file={file}
-            setFile={setFile}
-            uploading={uploading}
-            onUpload={handleUpload}
+          <UploadUrlPanel
+            onUpload={handleUrlUpload}
             taskId={taskId}
-            onCheckStatus={checkStatus}
-            error={error}
             status={status}
+            error={error}
+            presignedUrl={presignedUrl}
           />
-          <ResultPanel result={result} />
+
+          <ResultPanel 
+            result={result}
+            status={status}
+            taskId={taskId}
+            resultLoading={resultLoading}
+            refreshResult={refreshResult}
+          />
+          
+          {error && (
+            <div style={{ color: '#ef4444', marginTop: 12, fontWeight: 500, textAlign: 'center' }}>
+              错误: {error}
+            </div>
+          )}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

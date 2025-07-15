@@ -12,11 +12,11 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: 'http://localhost:8000',   // 你的后端HTTP接口地址
+          target: 'http://localhost:8001',   // 你的后端HTTP接口地址
           changeOrigin: true,
         },
         '/socket': {
-          target: 'ws://localhost:8000',    // 你的后端WebSocket服务地址
+          target: 'ws://localhost:8001',    // 你的后端WebSocket服务地址
           ws: true,
           changeOrigin: true,
         }

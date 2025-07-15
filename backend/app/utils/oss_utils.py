@@ -15,6 +15,7 @@ from alibabacloud_oss_v2.models import (
     AbortMultipartUploadRequest
 )
 import alibabacloud_oss_v2 as oss_v2
+import requests
 
 from app.settings import get_settings
 
@@ -215,6 +216,39 @@ class OSSUploader:
             logger.error(f"生成预签名URL时发生错误: {e}")
             return None
     
+    def get_presigned_url(self, object_key: str, expires_in: int = 3600) -> Optional[str]:
+        """
+        生成预签名URL
+        
+        Args:
+            object_key: OSS对象键名
+            expires_in: 过期时间(秒)，默认1小时
+            
+        Returns:
+            预签名URL，失败时返回None
+        """
+        try:
+            client = self._get_client()
+            
+            # 生成预签名URL
+            request = PutObjectRequest(
+                bucket=self.settings.oss_bucket_name,
+                key=object_key,
+                content_type='video/mp4'
+            )
+            
+            # 计算过期时间
+            expiration_time = datetime.now() + timedelta(seconds=expires_in)
+            
+            presign_url = client.presign(request, expiration=expiration_time)
+            
+            logger.info(f"预签名URL生成成功: {object_key}, 有效期: {expires_in}秒")
+            return presign_url.url
+                
+        except Exception as e:
+            logger.error(f"生成预签名URL时发生错误: {e}")
+            return None
+        
     def get_public_url(self, object_key: str) -> str:
         """
         获取公共访问URL（需要bucket为公共读取）
@@ -426,6 +460,21 @@ def get_public_url(object_key: str) -> str:
     """
     return oss_uploader.get_public_url(object_key)
 
+def download_from_url(file_url, save_path):
+    # file_url = "https://novavision.oss-cn-guangzhou.aliyuncs.com/test/Hello.txt?x-oss-signature-version=OSS4-HMAC-SHA256&x-oss-date=20250708T083512Z&x-oss-expires=3599&x-oss-credential=LTAI5tEimvL6oCKY1M2ocXcX%2F20250708%2Fcn-guangzhou%2Foss%2Faliyun_v4_request&x-oss-signature=1b8ef15283d5764330154a6e78e73ace6d1a3a0e5cb3b196eac27c811bc7a9bd"
+    # save_path = "app/tests/myfile.txt"
+
+    try:
+        response = requests.get(file_url, stream=True)
+        if response.status_code == 200:
+            with open(save_path, 'wb') as f:
+                for chunk in response.iter_content(4096):
+                    f.write(chunk)
+            print("Download completed!")
+        else:
+            print(f"No file to download. Server replied HTTP code: {response.status_code}")
+    except Exception as e:
+        print("Error during download:", e)
 
 def get_oss_uploader() -> OSSUploader:
     """
